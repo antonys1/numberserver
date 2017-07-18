@@ -2,38 +2,39 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import socket
 
 class NumberServer(BaseHTTPRequestHandler):
-    def _set_headers(self):
-        self.send_response(200)
+
+    NEXT_NUMBER_FILE_NAME = "next_number.txt"
+
+    def _set_headers(self, response_code):
+        self.send_response(response_code)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
 
     def do_GET(self):
-        self._set_headers()
-        
-        # Try and open number file and read number
         try:
-            f = open("number.txt", "r")
+            # open number file and read number
+            f = open(self.NEXT_NUMBER_FILE_NAME, "r")
             number = int(f.read())
             f.close()
-        except IOError, ValueError:
-            # if we fail then just assume 1
-            number = 1
 
-        # send the number to the client
-        self.wfile.write(str(number))
-        
-        # write incremented number back to file
-        f = open("number.txt", "w")
-        number = str(number+1)
-        f.write(number)
-        f.close()
+            # send the number to the client
+            self._set_headers(200)
+            self.wfile.write(str(number))
+            
+            # write incremented number back to file
+            f = open(self.NEXT_NUMBER_FILE_NAME, "w")
+            number = str(number + 1)
+            f.write(number)
+            f.close()
+        except IOError, ValueError:
+            self._set_headers(500)
 
     def do_HEAD(self):
-        self._set_headers()
+        self._set_headers(200)
 
 class HTTPServerV6(HTTPServer):
-  address_family = socket.AF_INET6        
-        
+  address_family = socket.AF_INET6
+
 def run(server_class=HTTPServerV6, handler_class=NumberServer, port=80):
     server_address = ('::', port)
     httpd = server_class(server_address, handler_class)
